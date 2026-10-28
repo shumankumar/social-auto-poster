@@ -1,0 +1,41 @@
+name: Social Media Auto Poster
+
+on:
+  schedule:
+    # हरेक २ घण्टामा स्वतः जाँच गरी पोस्ट गर्ने (Cron Schedule)
+    - cron: '0 */2 * * *'
+  workflow_dispatch: # चाहेको बेला म्यानुअली Run गर्ने बटन
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # posts.json अपडेट गर्न अनुमति
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install requests
+
+      - name: Run Main Poster
+        env:
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+        run: python main.py
+
+      - name: Commit updated JSON status
+        run: |
+          git config --global user.name "GitHub Action Bot"
+          git config --global user.email "bot@github.com"
+          git add posts.json
+          git commit -m "Update post status to Posted [skip ci]" || exit 0
+          git push
